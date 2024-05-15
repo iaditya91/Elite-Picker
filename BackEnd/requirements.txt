@@ -1,0 +1,8 @@
+flask
+transformers
+torch
+scikit-learn
+pandas
+mysql-connector-python
+transformers[llama]
+llama # for llama3 model

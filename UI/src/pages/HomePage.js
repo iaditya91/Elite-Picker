@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from "react-router-dom";
+import AuthContext from '../authentication/AuthProvider';
 
 function HomePage() {
+  const { auth } = useContext(AuthContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [voiceInput, setVoiceInput] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const searchInput = document.getElementById('search-input');

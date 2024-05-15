@@ -1,0 +1,285 @@
+# Here is the code for each file:
+
+# **app/chatbot.py**
+# ```python
+# from flask import Flask, request, jsonify
+# from llm_model import LLMModel
+# from recommendation_algorithm import RecommendationAlgorithm
+
+# app = Flask(__name__)
+
+# llm_model = LLMModel()
+# recommendation_algorithm = RecommendationAlgorithm()
+
+# @app.route('/chatbot', methods=['POST'])
+# def chatbot():
+#     user_input = request.get_json()['user_input']
+#     # Process user input using LLM model
+#     user_embedding = llm_model.process(user_input)
+#     # Get recommendations
+#     recommendations = recommendation_algorithm.recommend(user_embedding)
+#     return jsonify({'recommendations': recommendations.to_dict('records')})
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
+# ```
+
+# **app/llm_model.py**
+# ```python
+# import torch
+# from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+
+# class LLMModel:
+#     def __init__(self):
+#         self.tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+#         self.model = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased')
+
+#     def process(self, user_input):
+#         inputs = self.tokenizer.encode_plus(
+#             user_input,
+#             add_special_tokens=True,
+#             max_length=512,
+#             return_attention_mask=True,
+#             return_tensors='pt'
+#         )
+#         outputs = self.model(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+#         return outputs.last_hidden_state[:, 0, :]
+# ```
+
+# **app/recommendation_algorithm.py**
+# ```python
+
+
+
+# import numpy as np
+# import torch
+# import pandas as pd
+# from sklearn.metrics.pairwise import cosine_similarity
+# from transformers import DistilBertTokenizer, DistilBertModel
+
+# class RecommendationAlgorithm:
+#     def __init__(self):
+#         self.tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+#         self.model = DistilBertModel.from_pretrained('distilbert-base-uncased')
+#         self.products = pd.read_csv('products.csv')
+        
+#     def recommend(self, user_embedding):
+#         # Convert product descriptions to embeddings
+#         product_embeddings = []
+#         for description in self.products['description']:
+#             inputs = self.tokenizer.encode_plus(
+#                 description,
+#                 add_special_tokens=True,
+#                 max_length=512,
+#                 return_attention_mask=True,
+#                 return_tensors='pt'
+#             )
+#             outputs = self.model(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+#             product_embeddings.append(outputs.last_hidden_state[:, 0, :].detach().numpy())
+
+#         # Convert the list of arrays to a single array
+#         product_embeddings_array = np.array(product_embeddings)
+#         product_embeddings_array = product_embeddings_array.reshape(-1, 768) # new line
+#         # Calculate similarity between user embedding and product embeddings
+#         user_embedding = user_embedding.detach().numpy()
+#         similarities = cosine_similarity(user_embedding.reshape(1, -1), product_embeddings_array)
+
+#         # Get top-N recommendations
+#         top_recommendations = similarities.argsort()[:5]
+#         return self.products.iloc[top_recommendations]
+
+
+# **app/routes/chatbot.py**
+# ```python
+# from flask import Blueprint
+
+# chatbot_blueprint = Blueprint('chatbot', __name__)
+
+# @chatbot_blueprint.route('/chatbot', methods=['POST'])
+# def chatbot():
+#     # Call the chatbot function from app/chatbot.py
+#     return chatbot()
+# ```
+
+# **app/static/css/style.css**
+# ```css
+# body {
+#     font-family: Arial, sans-serif;
+# }
+
+# #chat-log {
+#     padding: 20px;
+#     border: 1px solid #ccc;
+#     border-radius: 10px;
+#     max-width: 500px;
+#     margin: 20px auto;
+# }
+# ```
+
+# **app/static/js/script.js**
+# ```javascript
+# const chatLog = document.getElementById('chat-log');
+# const userInput = document.getElementById('user-input');
+# const submitButton = document.getElementById('submit-button');
+
+# submitButton.addEventListener('click', async () => {
+#     const userInputValue = userInput.value.trim();
+#     if (userInputValue) {
+#         try {
+#             const response = await fetch('/chatbot', {
+#                 method: 'POST',
+#                 headers: { 'Content-Type': 'application/json' },
+#                 body: JSON.stringify({ user_input: userInputValue })
+#             });
+#             const recommendations = await response.json();
+#             chatLog.innerHTML += `<p>Recommendations:</p><ul>${recommendations.recommendations.map(recommendation => `<li>${recommendation.name}</li>`).join('')}</ul>`;
+#         } catch (error) {
+#             console.error(error);
+#         }
+#     }
+# });
+# ```
+
+# **app/templates/chatbot.html**
+# ```html
+# <!DOCTYPE html>
+# <html>
+# <head>
+#     <title>ChatGenie</title>
+#     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+# </head>
+# <body>
+#     <h1>ChatGenie</h1>
+#     <input type="text" id="user-input" placeholder="Ask me anything...">
+#     <button id="submit-button">Send</button>
+#     <div id="chat-log"></div>
+
+#     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+# </body>
+# </html>
+# ```
+
+# **config.py**
+# ```python
+# # Configuration file
+
+# LLM_MODEL_NAME = 'distilbert-base-uncased'
+# RECOMMENDATION_ALGORITHM = 'collaborative_filtering'
+# ```
+
+# **database.py**
+# ```python
+# # Database connection and schema
+
+# import mysql.connector
+
+# cnx = mysql.connector.connect(
+#     user='root',
+#     password='password',
+#     host='localhost',
+#     database='chatgenie'
+# )
+
+# cursor = cnx.cursor()
+# cursor.execute('''
+#     CREATE TABLE IF NOT EXISTS products (
+#         id INT AUTO_INCREMENT,
+#         name VARCHAR(255),
+#         description TEXT,
+#         category VARCHAR(255),
+#         attributes TEXT,
+#         PRIMARY KEY (id)
+#     )
+# ''')
+# cnx.commit()
+# cursor.close()
+# cnx.close()
+# ```
+
+# **main.py**
+# ```python
+# # Main application entry point
+
+# from app import app
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
+# ```
+
+# **models/llm_model.py**
+# ```python
+# # LLM model implementation
+
+# import torch
+# from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+
+# class LLMModel:
+#     def __init__(self):
+#         self.tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+#         self.model = DistilBertForSequenceClassification.from_pretrained('distilbert-base-uncased')
+
+#     def process(self, user_input):
+#         inputs = self.tokenizer.encode_plus(
+#             user_input,
+#             add_special_tokens=True,
+#             max_length=512,
+#             return_attention_mask=True,
+#             return_tensors='pt'
+#         )
+#         outputs = self.model(inputs['input_ids'], attention_mask=inputs['attention_mask'])
+#         return outputs.last_hidden_state[:, 0, :]
+# ```
+
+# **models/recommendation_algorithm.py**
+# ```python
+# # Recommendation algorithm implementation
+
+# import pandas as pd
+# from sklearn.metrics.pairwise import cosine_similarity
+
+# class RecommendationAlgorithm:
+#     def __init__(self):
+#         self.products = pd.read_csv('products.csv')
+
+#     def recommend(self, user_embedding):
+#         # Calculate similarity between user embedding and product descriptions
+#         similarities = cosine_similarity(user_embedding, self.products['description'])
+#         # Get top-N recommendations
+#         top_recommendations = similarities.argsort()[:5]
+#         return self.products.iloc[top_recommendations]
+# ```
+
+# **products.csv**
+# ```csv
+# name,description,category,attributes
+# Product 1,This is a product description,Category 1,attribute1,attribute2
+# Product 2,This is another product description,Category 2,attribute3,attribute4
+# ...
+# ```
+
+# **requirements.txt**
+# ```
+# flask
+# transformers
+# torch
+# scikit-learn
+# pandas
+# mysql-connector-python
+# ```
+
+# **README.md**
+# ```
+# ChatGenie
+# ================
+
+# A conversational AI chatbot that uses a Large Language Model (LLM) to ask follow-up questions and provide personalized product recommendations.
+
+# Getting Started
+# ---------------
+
+# 1. Install the required packages: `pip install -r requirements.txt`
+# 2. Run the application: `python main.py`
+# 3. Open a web browser and navigate to `http://localhost:5000`
+
+# Note: This is a basic implementation and may require further development and refinement.
+# ```
